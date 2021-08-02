@@ -41,6 +41,13 @@ export default function productPage(prop) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  AWS.config.update({
+    region: process.env.NEXT_PUBLIC_API_REGION as string,
+    credentials: {
+      accessKeyId: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY as string,
+      secretAccessKey: process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS as string,
+    },
+  });
   const s = await getSession(context);
   const user = await AuthenticatedUser.fromToken(s?.accessToken as string);
   const isVendor = await user.isVendor(process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID as string);
@@ -77,6 +84,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     privateScanResult = await caller.scanAsync(50, privateScanResult?.lastEvaluatedKey?.id, undefined, undefined, { type: 'Equals', subject: 'isSalable', object: false });
     privateProducts = privateProducts.concat(privateScanResult.count ? privateScanResult.data : privateScanResult as any);
   } while (privateScanResult?.lastEvaluatedKey);
+if (salableScanResult.data && salableScanResult.data.length === 0) {
+      salableProducts = [];
+}
+  if (privateScanResult.data && privateScanResult.data.length === 0) {
+      privateProducts = [];
+    }
 
   return {
     props: {
